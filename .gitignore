@@ -22,3 +22,9 @@ Thumbs.db
 
 # local db client
 local-start.sh
+
+# script files
+
+scripts/
+utils/
+remote-start.sh
