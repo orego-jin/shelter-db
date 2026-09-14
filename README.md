@@ -1,48 +1,33 @@
-# Node Project Setup
+# Animal Shelter Management Program
 
-Please refer to the [sample project setup instructions here](https://www.students.cs.ubc.ca/~cs-304/resources/javascript-oracle-resources/node-setup.html#remote-deploy-item) for more in-depth instructions.
+A full-stack web application designed to efficiently manage operations, animal records, and adoptions for animal shelters and wildlife rescue organizations.
 
-## Prerequisites
+## Project Overview
+This project is a comprehensive Database Management System (DBMS) that handles the complex data relationships in animal rescue operations. It provides a user-friendly web interface connected to a database, allowing staff to perform CRUD operations, track animal statuses, and execute complex queries for reporting and management purposes.
 
-- Access to UBC CS undergrad server
+## Tech Stack
+* **Frontend:** HTML5, CSS3, JavaScript
+* **Backend:** Node.js, Express.js
+* **Database:** Oracle SQL, `oracledb` 
+* **Design & Architecture:** Entity-Relationship (ER) Modeling, BCNF Normalization
 
-## Setup Instructions (Remote)
+## Key Features
+* **Data Management (CRUD):** Seamlessly Create, Read, Update, and Delete records for animals, rescue events, and adoption statuses through the web interface.
+* **Complex Data Querying:** 
+  * Advanced SQL queries including multi-table `JOIN`s to link animal profiles with medical or rescue history.
+  * Aggregation functions (`GROUP BY`, `HAVING`) to generate statistics (e.g., number of rescues per species, monthly adoption rates).
+  * Filter and search functionalities to locate specific animal records efficiently.
+* **Optimized Database Architecture:** The relational schema was carefully mapped from an ER diagram and normalized up to **Boyce-Codd Normal Form (BCNF)** to eliminate data redundancy and ensure data integrity.
+* **Basic security practices (sanitization) & basic error handling have been implemented.**
 
-### 1. Create Environment File
+## How to Run Locally
+* sh ./scripts/mac/db-tunnel.sh
+* sh ./local-start.sh
 
-Create a `.env` file in the root directory of the project with the following contents:
+### Prerequisites
+* [Node.js](https://nodejs.org/) installed
+* Access to an Oracle Database instance
+* Oracle Instant Client (if required by your environment)
 
-```
-# TODO: Edit the values below this line according to the given placeholders
-# Replace 'ora_YOUR-CWL-USERNAME' with "ora_" (no quotation marks) followed by your CWL username.
-ORACLE_USER=ora_YOUR-CWL-USERNAME
-# Replace 'YOUR-STUDENT-NUMBER' with your actual student number.
-ORACLE_PASS=aYOUR-STUDENT-NUMBER
+## Screenshots
 
-
-#Adjust the PORT if needed (e.g., if you encounter a "port already occupied" error)
-PORT=65535
-
-# -------------- The three lines below should be left unaltered --------------
-ORACLE_HOST=dbhost.students.cs.ubc.ca
-ORACLE_PORT=1522
-ORACLE_DBNAME=stu
-
-```
-
-### 2. Configure Team Number
-**Only perform this step if you want to run the project on the remote servers**
-
-Open the `remote-start.sh` script and set your team number:
-
-```bash
-TEAM_NUMBER=... # Replace ... with your actual team number here
-```
-
-### 3. Run the Application
-
-Execute the remote start script:
-
-```bash
-./remote-start.sh
-```
