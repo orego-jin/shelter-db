@@ -43,6 +43,12 @@ npm start
 
 ![image](imgs/animals-selection.png)
 
+![image](imgs/add-animal.png)
+
+![image](imgs/edit-animal.png)
+
+![image](imgs/remove-animal.png)
+
 ![image](imgs/adoptions-filter.png)
 
 ![image](imgs/shelters.png)
