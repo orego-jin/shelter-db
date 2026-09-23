@@ -1,45 +1,127 @@
-# Animal Shelter Management Program
+# Shelter DB
 
-A full-stack web application designed to efficiently manage operations, animal records, and adoptions for animal shelters and wildlife rescue organizations.
+**An animal shelter admin application built with JavaScript, Node.js, Express, and SQL.**
 
-## Project Overview
-This project is a comprehensive Database Management System (DBMS) that handles the complex data relationships in animal rescue operations. It provides a user-friendly web interface connected to a database, allowing staff to perform CRUD operations, track animal statuses, and execute complex queries for reporting and management purposes.
+Manage animal records, explore adoption history, and query shelter operations through a browser-based dashboard. Originally developed for UBC CPSC 304 using Oracle, the project now includes a persistent SQLite demo that runs without university database access.
 
-## Tech Stack
-* **Frontend:** HTML5, CSS3, JavaScript
-* **Backend:** Node.js, Express.js
-* **Database:** Oracle SQL, `oracledb` , SQLite
-* **Design & Architecture:** Entity-Relationship (ER) Modeling, BCNF Normalization
 
-## Key Features
-* **Data Management (CRUD):** Seamlessly Create, Read, Update, and Delete records for animals, rescue events, and adoption statuses through the web interface.
-* **Complex Data Querying:** 
-  * Advanced SQL queries including multi-table `JOIN`s to link animal profiles with medical or rescue history.
-  * Aggregation functions (`GROUP BY`, `HAVING`) to generate statistics (e.g., number of rescues per species, monthly adoption rates).
-  * Filter and search functionalities to locate specific animal records efficiently.
-* **Optimized Database Architecture:** The relational schema was carefully mapped from an ER diagram and normalized up to **Boyce-Codd Normal Form (BCNF)** to eliminate data redundancy and ensure data integrity.
-* **Basic security practices (sanitization) & basic error handling have been implemented.**
-
-## How to Run Locally
-### Using SQLite
-npm start
-
-### Using UBC Oracle Server 
-#### MAC
-* sh ./scripts/mac/db-tunnel.sh
-* sh ./local-start.sh
-#### Windows
-* ./scripts/db-tunnel.cmd
-* sh ./local-start.sh
-
-### Prerequisites
-* [Node.js](https://nodejs.org/) installed
-
-* Access to an Oracle Database instance
-* Oracle Instant Client (if required by your environment)
-
-## Screenshots
 ![image](imgs/overview.png)
+
+
+## Features
+
+| Area | What you can do |
+| --- | --- |
+| **Animal management** | Create, edit, and delete animal records. Search by gender, age, color, or shelter address. |
+| **Shelter overview** | View animal counts by location, shelters with more than five staff, and shelters with above-average animal counts. |
+| **Adoption lookup** | Search an adopter's name to retrieve linked animal records. |
+| **Volunteer directory** | Select which fields to display, including names, availability, and volunteer hours. |
+| **Donor reporting** | Find donors who have contributed to every tracked supply category. |
+
+* The dashboard summarizes current database records. 
+* Registration and editing are implemented for animals; the other sections provide lookup and reporting workflows.
+
+
+## Engineering decisions
+
+### Keeping the project runnable after losing Oracle access
+
+The original application relied on a university-hosted Oracle database. When that access was no longer available, SQLite provided a way to keep the project demonstrable without a separate database server or credentials.
+
+A shared database interface in [`db/index.js`](db/index.js) selects the backend. The SQLite adapter preserves the service's expected result format, allowing the existing Express routes to serve the same frontend. SQLite is the default; the Oracle connection path remains available through configuration.
+
+### Turning relational queries into usable workflows
+
+The application connects database concepts to shelter management questions:
+
+| SQL concept | Application use |
+| --- | --- |
+| `JOIN` | Link adopters to adoption records and animals; combine volunteer and worker details. |
+| Projection | Return the volunteer columns selected in the interface. |
+| `GROUP BY` | Count animal records by breed. |
+| `HAVING` | Identify shelters with more than five staff members. |
+| Nested aggregation | Compare a shelter's animal count with the average among shelters that have animal records. |
+| Relational division | Use nested `NOT EXISTS` queries to identify donors covering every supply category. |
+
+### Preserving data between demo sessions
+
+SQLite stores records in `data/demo.sqlite`. First-run schema creation and sample data insertion happen in a transaction; a database version marker prevents reseeding on subsequent starts. Foreign keys enforce shelter references, and deleting an animal cascades to its linked demo adoption records.
+
+### Moving from a course demo to an admin interface
+
+The frontend organizes the original query demonstrations into dashboard, animal management, shelter, adoption, volunteer, and donor views. Animal forms use dialogs, while search, filters, and tabular results support common management tasks. The UI uses plain JavaScript and CSS without a frontend framework or build step.
+
+## Architecture
+
+```text
+HTML / CSS / JavaScript (public/scripts.js)
+          │ HTTP requests
+          v
+Express routes        appController.js
+          │
+          v
+SQL service (Queries)        appService.js
+          │
+          v
+Database interface   db/index.js
+          ├── SQLite adapter → local demo file
+          └── Oracle connection pool → existing Oracle database
+```
+
+| Layer | Technology |
+| --- | --- |
+| Frontend | HTML, CSS, vanilla JavaScript, Fetch API |
+| Backend | Node.js, Express |
+| Database | SQLite via `node:sqlite`; Oracle via `oracledb` |
+| Data modeling | Relational schema, BCNF & 3NF, ER diagram |
+
+
+## Run locally
+
+### Requirements
+* Node.js 22.16 or newer 
+* npm
+* SQLite mode needs no Oracle account, tunnel, or separately installed database server.
+
+### Steps
+#### Using SQLite
+```sh
+git clone https://github.com/orego-jin/shelter-db.git
+cd shelter-db
+npm ci
+npm start
+```
+#### Using UBC Oracle
+``` sh
+sh ./scripts/mac/db-tunnel.sh
+sh ./local-start.sh
+```
+### Notes
+* Runs at **http://localhost:65534**. 
+* The first launch creates the database with three shelters, eight animals, volunteers, adopters, and donors. 
+* Changes persist across restarts. 
+* Stop the server with `Ctrl+C`.
+
+### A short walkthrough
+
+1. Open **Overview** to see the animal count and breed distribution.
+2. In **Animals**, search for `Ragdoll`, or filter by a shelter. Add a record with an unused animal ID, then edit it.
+3. In **Adoptions**, search for `Cindy` to see linked animal records.
+4. In **Volunteers**, change the selected columns and click **Update columns**.
+5. In **Donors**, find `Alex Kim`, whose sample donations cover all five categories.
+
+
+### Optional configuration
+
+Create a `.env` file in the project root if you want to override the defaults:
+
+```dotenv
+DB_MODE=sqlite
+PORT=65534
+SQLITE_PATH=./data/demo.sqlite
+```
+
+## More screenshots
 
 ![image](imgs/animals-selection.png)
 
