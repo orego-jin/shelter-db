@@ -3,7 +3,7 @@
 const { withDatabase } = require('./db');
 
 async function testDatabaseConnection() {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         return true;
     }).catch(() => {
         return false;
