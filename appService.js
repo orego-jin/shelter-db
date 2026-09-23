@@ -141,14 +141,13 @@ async function getDonorsAllCategories() {
             SELECT DISTINCT d.Email, d.Name
             FROM Donor d
             WHERE NOT EXISTS (
-                (SELECT i.Category FROM Item i)
-                MINUS
-                (SELECT it.Category
-                 FROM DonateTo dt
-                 JOIN Supplies s ON dt.UPC = s.UPC
-                 JOIN Item it ON s.ItemName = it.ItemName
-                 WHERE dt.Email = d.Email)
-            )
+                SELECT i.Category FROM Item i
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM DonateTo dt
+                    JOIN Supplies s ON dt.UPC = s.UPC
+                    JOIN Item it ON s.ItemName = it.ItemName
+                    WHERE dt.Email = d.Email AND it.Category = i.Category
+                )
         `);
         return result.rows;
     }).catch(() => []);
@@ -282,6 +281,8 @@ async function getShelterWithHigherThanAverageAnimals() {
     });
     
 }
+
+
 
 
 

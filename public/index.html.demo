@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animal Shelter Admin — Animals</title>
+<style>
+  :root {
+    --sage: #d1739a;
+    --sage-dark: #b1547c;
+    --bg: #f7f7f4;
+    --card: #ffffff;
+    --ink: #23291f;
+    --muted: #6b7166;
+    --border: #dfe1da;
+    --danger: #b3452e;
+    --danger-bg: #fbeae5;
+    --success: #2f6b45;
+    --success-bg: #e7f2ea;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+  }
+
+  header {
+    background: var(--sage-dark);
+    color: #fff;
+    padding: 1.5rem 2rem;
+  }
+
+  header h1 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.5rem;
+    letter-spacing: -0.01em;
+  }
+
+  header p {
+    margin: 0;
+    color: #cfe0d5;
+    font-size: 0.95rem;
+  }
+
+  nav {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem 2rem;
+    background: #fff;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    flex-wrap: wrap;
+  }
+
+  nav a {
+    text-decoration: none;
+    color: var(--sage-dark);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+  }
+
+  nav a:hover { background: var(--bg); }
+
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  section.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+  }
+
+  section.card h2 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.15rem;
+  }
+
+  section.card p.desc {
+    margin: 0 0 1.25rem 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  .field {
+    margin-bottom: 0.9rem;
+  }
+
+  .field label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    color: var(--ink);
+  }
+
+  .field input,
+  .field select {
+    width: 100%;
+    padding: 0.55rem 0.7rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    background: #fff;
+    color: var(--ink);
+  }
+
+  .field input:focus,
+  .field select:focus {
+    outline: 2px solid var(--sage);
+    outline-offset: 1px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.9rem;
+  }
+
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .checkbox-field input[type="checkbox"] {
+    width: auto;
+  }
+
+  .checkbox-field .field {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
+  .checkbox-field .field input:disabled {
+    background: #f1f1ee;
+    color: var(--muted);
+  }
+
+  button {
+    background: var(--sage);
+    color: #fff;
+    border: none;
+    padding: 0.65rem 1.2rem;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  button:hover { background: var(--sage-dark); }
+
+  button.danger { background: var(--danger); }
+  button.danger:hover { background: #8f381f; }
+
+  button:disabled {
+    background: #b7bcb1;
+    cursor: not-allowed;
+  }
+
+  .status {
+    margin-top: 0.9rem;
+    padding: 0.6rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    display: none;
+  }
+
+  .status.success {
+    display: block;
+    background: var(--success-bg);
+    color: var(--success);
+  }
+
+  .status.error {
+    display: block;
+    background: var(--danger-bg);
+    color: var(--danger);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    font-size: 0.88rem;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 0.5rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .empty-note {
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-top: 0.75rem;
+  }
+
+  .warning {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border-radius: 6px;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Animal Shelter Admin Console</h1>
+  <p>Manage animal records across all shelter locations</p>
+</header>
+
+<!-- <nav>
+  <a href="#insert-section">Add Animal</a>
+  <a href="#update-section">Update Animal</a>
+  <a href="#delete-section">Remove Animal</a>
+  <a href="#division-section">Full-Category Donors</a>
+  <a href="#aggregate-groupBy-section">Total Animals per Breed</a>
+</nav> -->
+
+<main>
+
+    <h1>Database Connection Status: 
+        An in-line placeholder to display ubc oracle db connection status.
+        <span id="dbStatus"> </span>
+        A loading GIF, will be hided once get the status.
+        <img id="loadingGif" class="loading-gif" src="loading_100px.gif" alt="Loading...">
+    </h1>
+
+<!-- ============================================================ -->
+<!-- AGGREGATION WITH GROUP BY -->
+<!-- ============================================================ -->
+
+  <section class="card" id="aggregate-groupBy-section">
+    <h2>Number of Animals for each Breed</h2>
+        <br>
+        <button id="breedAllCategories"> Get number of Animals for each Breed </button>
+        <!-- A placeholder to display the count result. -->
+        <table id="breedAllCategoriesTable">
+            <thead>
+                <tr>
+                    <th>Breed</th>
+                    <th>Animal Count</th>
+                </tr>
+            </thead>
+            <tbody id="breedAllCategoriesTableBody"></tbody>
+        </table>
+        <br>
+        <div id="breedAllCategoriesResultMsg"></div> <br>
+  </section>
+
+<!-- ============================================================ -->
+<!-- AGGREGATION WITH GROUP BY and HAVING-->
+<!-- ============================================================ -->
+
+  <section class="card" id="aggregate-groupBy-having-section">
+    <h2>All Shelters with more than 5 Animal Caretakers</h2>
+        <br>
+        <button id="getSheltersWithMoreThan5Staff"> Get all Shelters with more than 5 Animal Caretakers </button>
+        <!-- A placeholder to display the count result. -->
+        <table id="sheltersMoreThan5Table">
+            <thead>
+                <tr>
+                    <th>Street Address</th>
+                    <th>Postal Code</th>
+                    <th>Animal Caretaker Count</th>
+                </tr>
+            </thead>
+            <tbody id="sheltersMoreThan5TableBody"></tbody>
+        </table>
+        <br>
+        <div id="shelterTenResultsMsg"></div> <br>
+  </section>
+
+<!-- ============================================================ -->
+<!-- NESTED AGGREGATION WITH GROUP BY and HAVING-->
+<!-- ============================================================ -->
+
+  <section class="card" id="nested-aggregate-groupBy-having-section">
+    <h2>Shelters that house more than average number of animals across all shelters</h2>
+        <br>
+        <button id="higherThanAverageNumAnimalsButton"> Get Results</button>
+        <!-- A placeholder to display the count result. -->
+        <table id="higherThanAverageNumAnimalsTable">
+            <thead>
+                <tr>
+                    <th>Street Address</th>
+                    <th>Postal Code</th>
+                    <th>Animal Count</th>
+                </tr>
+            </thead>
+            <tbody id="higherThanAverageNumAnimalsTableBody"></tbody>
+        </table>
+        <br>
+        <div id="higherThanAverageNumAnimalsMsg"></div> <br>
+  </section>
+  
+  <!-- ============================================================ -->
+  <!-- INSERT -->
+  <!-- ============================================================ -->
+  <section class="card" id="insert-section">
+    <h2>INSERT - Add a new animal</h2>
+    <p class="desc">Register an animal at one of your shelter locations.</p>
+
+    <form id="insert-form">
+      <div class="row">
+        <div class="field">
+          <label for="insert-id">Animal ID</label>
+          <input type="number" id="insert-id" required>
+        </div>
+        <div class="field">
+          <label for="insert-breed">Breed</label>
+          <input type="text" id="insert-breed" required>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="insert-gender">Gender</label>
+          <select id="insert-gender" required>
+            <option value="">Select…</option>
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="insert-age">Age (years)</label>
+          <input type="number" id="insert-age" min="0" required>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="insert-color">Color</label>
+        <input type="text" id="insert-color" required>
+      </div>
+
+      <div class="field">
+        <label for="insert-shelter">Shelter location</label>
+        <select id="insert-shelter" required>
+          <option value="">Loading shelters…</option>
+        </select>
+      </div>
+
+      <button type="submit">Add animal</button>
+      <div class="status" id="insert-status"></div>
+    </form>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- UPDATE -->
+  <!-- ============================================================ -->
+  <section class="card" id="update-section">
+    <h2>UPDATE - Update an animal</h2>
+    <p class="desc">Pick an animal, then check off only the fields you want to change.</p>
+
+    <div class="field">
+      <label for="update-select">Animal</label>
+      <select id="update-select">
+        <option value="">Loading animals…</option>
+      </select>
+    </div>
+
+    <form id="update-form">
+      <div class="checkbox-field">
+        <input type="checkbox" data-field="breed" class="update-toggle">
+        <div class="field">
+          <label>Breed</label>
+          <input type="text" id="update-breed" disabled>
+        </div>
+      </div>
+
+      <div class="checkbox-field">
+        <input type="checkbox" data-field="gender" class="update-toggle">
+        <div class="field">
+          <label>Gender</label>
+          <select id="update-gender" disabled>
+            <option value="M">Male</option>
+            <option value="F">Female</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="checkbox-field">
+        <input type="checkbox" data-field="age" class="update-toggle">
+        <div class="field">
+          <label>Age (years)</label>
+          <input type="number" id="update-age" min="0" disabled>
+        </div>
+      </div>
+
+      <div class="checkbox-field">
+        <input type="checkbox" data-field="color" class="update-toggle">
+        <div class="field">
+          <label>Color</label>
+          <input type="text" id="update-color" disabled>
+        </div>
+      </div>
+
+      <div class="checkbox-field">
+        <input type="checkbox" data-field="shelter" class="update-toggle">
+        <div class="field">
+          <label>Shelter location</label>
+          <select id="update-shelter" disabled>
+            <option value="">Loading shelters…</option>
+          </select>
+        </div>
+      </div>
+
+      <button type="submit">Save changes</button>
+      <div class="status" id="update-status"></div>
+    </form>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- DELETE -->
+  <!-- ============================================================ -->
+  <section class="card" id="delete-section">
+    <h2>DELETE - Remove an animal</h2>
+    <p class="desc">Deletes the animal record and all of its related records (medical history, rescue record, adoption record, care assignments).</p>
+
+    <div class="warning">This cannot be undone. Related medical, rescue, and adoption records for this animal will be deleted too.</div>
+
+    <div class="field">
+      <label for="delete-select">Animal</label>
+      <select id="delete-select">
+        <option value="">Loading animals…</option>
+      </select>
+    </div>
+
+    <button type="button" class="danger" id="delete-btn">Remove animal</button>
+    <div class="status" id="delete-status"></div>
+  </section>
+
+  <!-- ============================================================ -->
+  <!-- DIVISION -->
+  <!-- ============================================================ -->
+  <section class="card" id="division-section">
+    <h2>DIVISION - Donors who've given in every supply category</h2>
+    <p class="desc">Finds donors who have contributed at least one item from every supply category the shelter tracks (Food, Toy, Bedding, Accessory, Hygiene).</p>
+
+    <button type="button" id="division-btn">Show donors</button>
+    <div class="status" id="division-status"></div>
+
+    <table id="division-table" style="display:none;">
+      <thead>
+        <tr><th>Email</th><th>Name</th></tr>
+      </thead>
+      <tbody id="division-body"></tbody>
+    </table>
+    <p class="empty-note" id="division-empty" style="display:none;">No donors currently qualify.</p>
+  </section>
+
+
+<!-- ---------------------------- Sujin's ------------------------------------------------- -->
+<!-- ============================================================ -->
+<!-- SELECTION --> 
+<!-- ============================================================ -->
+<section class="card" id="selection-section">
+    <h2>SELECTION - Search Animal</h2>
+    <p>Find animals in the shelter. </p>
+    
+    <form id="selectionAnimal">
+        <!-- Age: <input type="number" id="selectionAge" placeholder="Enter Age" required> <br><br>
+        Gender(M/F): <input type="text" id="selectionName" placeholder="Enter Gender" maxlength="1" required> <br><br> -->
+
+        <div id="attributeList">
+            <div class="attributeLine">
+                <select class="attr">
+                    <option value="breed">Breed</option>
+                    <option value="gender">Gender</option>
+                    <option value="age">Age</option>
+                    <option value="color">Color</option>
+                    <option value="shelter">Shelter</option>
+                </select>
+                <input class="selectionInput" placeholder="Enter value" maxlength="20" required>
+                <br><br>
+            </div>
+        </div>
+        <button type="button" id="addAttributeBtn">Add more attributes</button>
+        <br><br>
+
+        <button type="submit">Search</button>
+    </form>
+    <table id="selectionTable">
+        <thead>
+            <tr>
+                <th>AnimalID</th>
+                <th>Breed</th>
+                <th>Gender</th>
+                <th>Age</th>
+                <th>Color</th>
+                <th>Shelter Address</th>
+            </tr>
+        </thead>
+        <tbody id="selectionTableBody"></tbody>
+    </table>
+
+    <div id="selectionMessage"></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- PROJECTION -->
+<!-- ============================================================ -->
+
+<section class="card" id="projectionSection">
+    <h2>PROJECTION - Volunteer Information</h2>
+    <p> Choose the volunteer information to display. </p>
+
+    <form id="projectVolunteer">
+        <div>
+            <input type="checkbox" data-field="WorkerID" class="projectionToggle" onclick="boxChecked(this)">
+            <label>Worker ID</label>
+        </div>
+
+        <div>
+            <input type="checkbox" data-field="firstName" class="projectionToggle" onclick="boxChecked(this)">
+            <label>First Name</label>
+        </div>
+
+        <div>
+            <input type="checkbox" data-field="lastName" class="projectionToggle" onclick="boxChecked(this)">
+            <label>Last Name</label>
+        </div>
+
+        <div>
+            <input type="checkbox" data-field="phoneNumber" class="projectionToggle" onclick="boxChecked(this)">
+            <label>Phone Number</label>
+        </div>
+
+        <div>
+            <input type="checkbox" data-field="volunteerHours" class="projectionToggle" onclick="boxChecked(this)">
+            <label>Volunteer Hours</label>
+        </div>
+
+        <div class>
+            <input type="checkbox" data-field="availability" class="projectionToggle" onclick="boxChecked(this)">
+            <label>Availability</label>
+        </div>
+
+        <div>
+            <input type="checkbox" data-field="startDate" class="projectionToggle" onclick="boxChecked(this)">
+            <label>Starting Date</label>
+        </div>
+
+        <br>
+        <button type="submit">Enter</button>
+
+    </form>
+
+    <table id="projectionTable">
+        <thead>
+            <tr id="projectionTableHeader1"></tr>
+        </thead>
+        <tbody id="projectionTableBody"></tbody>
+    </table>
+
+    <div id="projectionMessage"></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- JOIN -->
+<!-- ============================================================ -->
+
+<section class="card" id="joinSection">
+    <h2>JOIN - Adoption Record</h2>
+    <p>Enter an adopter name to see their adopted animals. </p>
+    
+    <form id="joinAdopterAnimal">
+        Enter Adopter Name: <input type="text" id="adopterName" maxlength="20" placeholder="Enter Name" required> <br><br>
+
+    <button type="submit">Search</button>
+    </form>
+
+    <table id="joinTable">
+        <thead>
+            <tr>
+                <th>Adopter Name</th>
+                <th>AnimalID</th>
+                <th>Animal Age</th>
+                <th>Animal Gender</th>
+                <th>Animal Breed</th>
+            </tr>
+        </thead>
+        <tbody id="joinTableBody">
+        </tbody>
+    </table>
+
+    <div id="joinMessage"></div>
+</section>
+
+ <!-- ------------------------------------------------------------------------------------------------------------------------------ -->
+  
+
+</main>
+<script src="scripts.js"></script>
+
+</body>
+</html>
