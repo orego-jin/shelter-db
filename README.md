@@ -19,7 +19,7 @@ Manage animal records, explore adoption history, and query shelter operations th
 | **Donor reporting** | Find donors who have contributed to every tracked supply category. |
 
 * The dashboard summarizes current database records. 
-* Registration and editing are implemented for animals; the other sections provide lookup and reporting workflows.
+* Registration and editing are implemented for animals. The other sections provide lookup and reporting workflows.
 
 
 ## Engineering decisions
@@ -28,7 +28,8 @@ Manage animal records, explore adoption history, and query shelter operations th
 
 The original application relied on a university-hosted Oracle database. When that access was no longer available, SQLite provided a way to keep the project demonstrable without a separate database server or credentials.
 
-A shared database interface in [`db/index.js`](db/index.js) selects the backend. The SQLite adapter preserves the service's expected result format, allowing the existing Express routes to serve the same frontend. SQLite is the default; the Oracle connection path remains available through configuration.
+A shared database interface in [`db/index.js`](db/index.js) selects the backend. The SQLite adapter preserves the service's expected result format, allowing the existing Express routes to serve the same frontend. 
+SQLite is the default. The Oracle connection path remains available through configuration.
 
 ### Turning relational queries into usable workflows
 
@@ -43,13 +44,12 @@ The application connects database concepts to shelter management questions:
 | Nested aggregation | Compare a shelter's animal count with the average among shelters that have animal records. |
 | Relational division | Use nested `NOT EXISTS` queries to identify donors covering every supply category. |
 
+### Basic Security Practices
+Used parameterized queries for selection operations to safely handle user input and help prevent SQL injection.
+
 ### Preserving data between demo sessions
 
-SQLite stores records in `data/demo.sqlite`. First-run schema creation and sample data insertion happen in a transaction; a database version marker prevents reseeding on subsequent starts. Foreign keys enforce shelter references, and deleting an animal cascades to its linked demo adoption records.
-
-### Moving from a course demo to an admin interface
-
-The frontend organizes the original query demonstrations into dashboard, animal management, shelter, adoption, volunteer, and donor views. Animal forms use dialogs, while search, filters, and tabular results support common management tasks. The UI uses plain JavaScript and CSS without a frontend framework or build step.
+SQLite stores records in `data/demo.sqlite`. First-run schema creation and sample data insertion happen in a transaction.
 
 ## Architecture
 
