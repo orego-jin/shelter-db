@@ -8,7 +8,7 @@ This project is a comprehensive Database Management System (DBMS) that handles t
 ## Tech Stack
 * **Frontend:** HTML5, CSS3, JavaScript
 * **Backend:** Node.js, Express.js
-* **Database:** Oracle SQL, `oracledb` 
+* **Database:** Oracle SQL, `oracledb` , SQLite
 * **Design & Architecture:** Entity-Relationship (ER) Modeling, BCNF Normalization
 
 ## Key Features
@@ -21,6 +21,10 @@ This project is a comprehensive Database Management System (DBMS) that handles t
 * **Basic security practices (sanitization) & basic error handling have been implemented.**
 
 ## How to Run Locally
+### SQLite
+npm start
+
+### UBC ORACLE SERVER
 * sh ./scripts/mac/db-tunnel.sh
 * sh ./local-start.sh
 
