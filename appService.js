@@ -148,6 +148,7 @@ async function getDonorsAllCategories() {
                     JOIN Item it ON s.ItemName = it.ItemName
                     WHERE dt.Email = d.Email AND it.Category = i.Category
                 )
+            )
         `);
         return result.rows;
     }).catch(() => []);

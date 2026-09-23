@@ -21,17 +21,32 @@ This project is a comprehensive Database Management System (DBMS) that handles t
 * **Basic security practices (sanitization) & basic error handling have been implemented.**
 
 ## How to Run Locally
-### SQLite
+### Using SQLite
 npm start
 
-### UBC ORACLE SERVER
+### Using UBC Oracle Server 
+#### MAC
 * sh ./scripts/mac/db-tunnel.sh
+* sh ./local-start.sh
+#### Windows
+* ./scripts/db-tunnel.cmd
 * sh ./local-start.sh
 
 ### Prerequisites
 * [Node.js](https://nodejs.org/) installed
+
 * Access to an Oracle Database instance
 * Oracle Instant Client (if required by your environment)
 
 ## Screenshots
+![image](imgs/overview.png)
 
+![image](imgs/animals-selection.png)
+
+![image](imgs/adoptions-filter.png)
+
+![image](imgs/shelters.png)
+
+![image](imgs/volunteers-projection.png)
+
+![image](imgs/donors-advancedQuery.png)
