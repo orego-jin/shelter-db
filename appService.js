@@ -1,85 +1,20 @@
-const oracledb = require('oracledb');
-const loadEnvFile = require('./utils/envUtil');
+// GENERAL DB SETUP
 
-const envVariables = loadEnvFile('./.env');
+const { withDatabase } = require('./db');
 
-// Database configuration setup. Ensure your .env file has the required database credentials.
-const dbConfig = {
-    user: envVariables.ORACLE_USER,
-    password: envVariables.ORACLE_PASS,
-    connectString: `${envVariables.ORACLE_HOST}:${envVariables.ORACLE_PORT}/${envVariables.ORACLE_DBNAME}`,
-    poolMin: 1,
-    poolMax: 3,
-    poolIncrement: 1,
-    poolTimeout: 60
-};
-
-// initialize connection pool
-async function initializeConnectionPool() {
-    try {
-        await oracledb.createPool(dbConfig);
-        console.log('Connection pool started');
-    } catch (err) {
-        console.error('Initialization error: ' + err.message);
-    }
-}
-
-async function closePoolAndExit() {
-    console.log('\nTerminating');
-    try {
-        await oracledb.getPool().close(10); // 10 seconds grace period for connections to finish
-        console.log('Pool closed');
-        process.exit(0);
-    } catch (err) {
-        console.error(err.message);
-        process.exit(1);
-    }
-}
-
-initializeConnectionPool();
-
-process
-    .once('SIGTERM', closePoolAndExit)
-    .once('SIGINT', closePoolAndExit);
-
-
-// ----------------------------------------------------------
-// Wrapper to manage OracleDB actions, simplifying connection handling.
-async function withOracleDB(action) {
-    let connection;
-    try {
-        connection = await oracledb.getConnection(); // Gets a connection from the default pool 
-        return await action(connection);
-    } catch (err) {
-        console.error(err);
-        throw err;
-    } finally {
-        if (connection) {
-            try {
-                await connection.close();
-            } catch (err) {
-                console.error(err);
-            }
-        }
-    }
-}
-
-
-// ----------------------------------------------------------
-// Core functions for database operations
-// Modify these functions, especially the SQL queries, based on your project's requirements and design.
-async function testOracleConnection() {
+async function testDatabaseConnection() {
     return await withOracleDB(async (connection) => {
         return true;
     }).catch(() => {
         return false;
     });
 }
-
+// ----------------------------------------------------------
+// Core functions for database operations
 
 // ANIMAL - INSERT
 async function insertAnimal(animalID, breed, gender, age, color, shelterAddress, shelterPostalCode) {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         try {
             const result = await connection.execute(
                 `INSERT INTO Animal (AnimalID, Breed, Gender, Age, Color, Shelter_Address, Shelter_PostalCode)
@@ -106,7 +41,7 @@ async function insertAnimal(animalID, breed, gender, age, color, shelterAddress,
 
 // ANIMAL — READ (used to populate Update/Delete dropdowns)
 async function getAllAnimals() {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         const result = await connection.execute(
             `SELECT AnimalID, Breed, Gender, Age, Color, Shelter_Address, Shelter_PostalCode
              FROM Animal
@@ -144,7 +79,7 @@ async function updateAnimal(animalID, fields) {
         return { success: false, message: 'No fields provided to update.' };
     } 
 
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         try{
             const result = await connection.execute(
                 `UPDATE Animal SET ${setClauses.join(', ')} WHERE AnimalID = :animalID`,
@@ -170,7 +105,7 @@ async function updateAnimal(animalID, fields) {
 // AdoptThrough, Animal_AnimalCaretaker, Animal_Volunteer via
 // ON DELETE CASCADE on the AnimalID foreign keys (see setup.sql).
 async function deleteAnimal(animalID) {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         try {
             const result = await connection.execute(
                 `DELETE FROM Animal WHERE AnimalID = :animalID`,
@@ -190,7 +125,7 @@ async function deleteAnimal(animalID) {
 
 // SHELTER — READ (used to populate shelter dropdowns for Insert/Update)
 async function getAllShelters() {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         const result = await connection.execute(
             `SELECT Address, PostalCode FROM Shelter ORDER BY Address`
         );
@@ -201,7 +136,7 @@ async function getAllShelters() {
 
 // DIVISION — Donors who have donated to every supply category
 async function getDonorsAllCategories() {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         const result = await connection.execute(`
             SELECT DISTINCT d.Email, d.Name
             FROM Donor d
@@ -221,7 +156,7 @@ async function getDonorsAllCategories() {
 
 // SELECTION
 async function selectFromAnimal(attrArray) {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         let query = `SELECT AnimalID, Breed, Gender, Age, Color, Shelter_Address
                     FROM ANIMAL`; 
                     // WHERE breed = 'Ragdoll'`;
@@ -258,7 +193,7 @@ async function selectFromAnimal(attrArray) {
 
 // PROJECTION
 async function projectFromVolunteer(array) {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         const attributes = array.join(", ");
         const query = `SELECT ${attributes}
                     FROM VOLUNTEER v
@@ -274,7 +209,7 @@ async function projectFromVolunteer(array) {
 
 // JOIN
 async function joinAdopterAndAnimal(name) {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         const query = `SELECT ad.Name, ani.AnimalID, ani.age, ani.gender, ani.breed
                     FROM Adopter ad
                     LEFT JOIN AdoptionRecord ar ON ad.Email = ar.Adopter_Email
@@ -302,11 +237,9 @@ async function joinAdopterAndAnimal(name) {
     });
 }
 
-// ---------------- KAVISHA's QUERIES -----------------------
-
 // returns number of different animals for each Breed of animals
 async function getTotalTypesOfAnimals() {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         const result = await connection.execute('SELECT Breed, COUNT(*) FROM ANIMAL GROUP BY Breed');
         return result;
     }).catch(() => {
@@ -318,7 +251,7 @@ async function getTotalTypesOfAnimals() {
 
 // returns number of different animals for each Breed of animals
 async function getAllSheltersWithMoreThan5staff() {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         const result = await connection.execute('SELECT w.ShelterAddress, w.ShelterPostalCode, COUNT(a.sID) FROM STAFF a, WORKERS w WHERE w.workerID = a.sID GROUP BY w.ShelterAddress, w.ShelterPostalCode HAVING COUNT(a.sID) > 5');
         return result;
     }).catch(() => {
@@ -332,7 +265,7 @@ async function getAllSheltersWithMoreThan5staff() {
 
  // returns the shelters with more animals than average number of animals across all shelters
 async function getShelterWithHigherThanAverageAnimals() {
-    return await withOracleDB(async (connection) => {
+    return await withDatabase(async (connection) => {
         const query = `SELECT s.shelter_Address, s.shelter_postalcode, COUNT(s.animalID) 
                                                 FROM Animal s
                                                 GROUP BY s.shelter_Address, s.shelter_postalcode
@@ -352,10 +285,8 @@ async function getShelterWithHigherThanAverageAnimals() {
 
 
 
-// ---------------END OF KAVISHA's QUERIES-------------------
-
 module.exports = {
-    testOracleConnection,
+    testDatabaseConnection,
     insertAnimal,
     getAllAnimals,
     updateAnimal,

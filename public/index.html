@@ -233,26 +233,26 @@
 <body>
 
 <header>
-  <h1>Animal Shelter Admin</h1>
+  <h1>Animal Shelter Admin Console</h1>
   <p>Manage animal records across all shelter locations</p>
 </header>
 
-<nav>
+<!-- <nav>
   <a href="#insert-section">Add Animal</a>
   <a href="#update-section">Update Animal</a>
   <a href="#delete-section">Remove Animal</a>
   <a href="#division-section">Full-Category Donors</a>
   <a href="#aggregate-groupBy-section">Total Animals per Breed</a>
-</nav>
+</nav> -->
 
 <main>
 
-    <h1>Database Connection Status: 
-        <!-- An in-line placeholder to display connection status. -->
-        <span id="dbStatus"> </span>
+    <!-- <h1>Database Connection Status:  -->
+        <!-- An in-line placeholder to display ubc oracle db connection status. -->
+        <!-- <span id="dbStatus"> </span> -->
         <!-- A loading GIF, will be hided once get the status. -->
-        <img id="loadingGif" class="loading-gif" src="loading_100px.gif" alt="Loading...">
-  </h1>
+        <!-- <img id="loadingGif" class="loading-gif" src="loading_100px.gif" alt="Loading..."> -->
+    <!-- </h1> -->
 
 <!-- ============================================================ -->
 <!-- AGGREGATION WITH GROUP BY -->
@@ -510,13 +510,13 @@
     </form>
     <table id="selectionTable">
         <thead>
-            <tr id="projectionTableHeader">
-                <th>Adopter Name</th>
+            <tr>
                 <th>AnimalID</th>
-                <th>Animal Age</th>
-                <th>Animal Gender</th>
-                <th>Animal Breed</th>
-                <th>Animal Shelter</th>
+                <th>Breed</th>
+                <th>Gender</th>
+                <th>Age</th>
+                <th>Color</th>
+                <th>Shelter Address</th>
             </tr>
         </thead>
         <tbody id="selectionTableBody"></tbody>

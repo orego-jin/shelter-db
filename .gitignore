@@ -28,3 +28,5 @@ local-start.sh
 scripts/
 utils/
 remote-start.sh
+
+data/
