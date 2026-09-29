@@ -67,11 +67,17 @@ async function overview() {
         start=end;return stop;});
     $('donut').style.background=total?`conic-gradient(${stops.join(',')})`:'#e8eddf';
     $('donut-total').textContent=total;
-    $('breed-legend').innerHTML=breeds.map((r,i)=>`<div class="legend-row"><i style="background:${palette[i%palette.length]}"></i>${esc(r[0])}<strong>${r[1]}</strong><small>${Math.round(r[1]/total*100)}%</small></div>`).join('');
+    $('breed-legend').innerHTML=breeds.map((r,i)=>
+        `<div class="legend-row"><i style="background:${palette[i%palette.length]}"></i>${esc(r[0])}<strong>${r[1]}</strong><small>${Math.round(r[1]/total*100)}%</small></div>`).join('');
     $('overview-table').innerHTML=animalTable(state.animals.slice(0,5));
 }
 async function shelters() {
-    $('shelter-cards').innerHTML=state.shelters.map((s,i)=>`<article class="shelter-card"><div class="building">⌂</div><h3>${esc(s[0])}</h3><p>${esc(s[1])}</p><strong>${state.animals.filter(r=>r[5]===s[0]&&r[6]===s[1]).length}</strong> <span class="muted">animal records</span><a href="#animals" data-shelter="${i}">Explore animals →</a></article>`).join('');
+    $('shelter-cards').innerHTML=state.shelters.map((s,i)=>
+        `<article class="shelter-card">
+        <div class="building">⌂</div>
+        <h3>${esc(s[0])}</h3><p>${esc(s[1])}</p><strong>${state.animals.filter(r=>r[5]===s[0]&&r[6]===s[1]).length}</strong> 
+        <span class="muted">animal records</span>
+        <a href="#animals" data-shelter="${i}">Explore animals →</a></article>`).join('');
     const [staff,average]=await Promise.all([api('/get-shelters-with-more-than-5-staff'),api('/get-shelters-with-more-than-average-animals')]);
     if (!Array.isArray(staff.data)||!Array.isArray(average.data)) throw new Error('Could not load shelter reports.');
     $('staff-table').innerHTML=table(['Address','Postal code','Staff'],staff.data);
@@ -79,12 +85,15 @@ async function shelters() {
 }
 async function volunteers() {
     const attrs=[...document.querySelectorAll('#volunteer-columns input:checked')].map(el=>el.value);
-    if(!attrs.length){$('volunteer-results').innerHTML='<div class="empty">Choose at least one column to view volunteers.</div>';return;}
+    if(!attrs.length){$('volunteer-results').innerHTML='<div class="empty">Choose at least one column to view volunteers.</div>';
+        return;
+    }
     const result=await api('/projection',{attributes:attrs});
     $('volunteer-results').innerHTML=table(attrs.map(a=>columns[a]),result.data);
 }
 async function donors() {const result=await api('/donors-all-categories');
-    $('donor-results').innerHTML=table(['Email address','Donor name'],result.data,'No donors have contributed to every category yet.');}
+    $('donor-results').innerHTML=table(['Email address','Donor name'],result.data,'No donors have contributed to every category yet.');
+}
 async function route() {
     const page=Object.hasOwn(pages, location.hash.slice(1))?location.hash.slice(1):'overview';
     document.querySelectorAll('[data-view]').forEach(el=>el.hidden=el.dataset.view!==page);
@@ -119,8 +128,11 @@ function openAnimal(id) {
     const f=$('animal-form');f.reset();$('form-error').hidden=true;
     f.elements.shelter.innerHTML='<option value="">Choose a shelter</option>'+state.shelters.map(r=>`<option value="${esc(JSON.stringify(r))}">${esc(r[0])} · ${esc(r[1])}</option>`).join('');
     f.elements.animalID.readOnly=!!row;
-    if(row){['animalID','breed','gender','age','color'].forEach((key,i)=>f.elements[key].value=row[i]);f.elements.shelter.value=JSON.stringify([row[5],row[6]]);}
-    $('dialog-title').textContent=row?'Edit animal record':'Add an animal';$('save-animal').textContent=row?'Save changes':'Add animal';$('animal-dialog').showModal();
+    if(row){['animalID','breed','gender','age','color'].forEach((key,i)=>f.elements[key].value=row[i]);
+        f.elements.shelter.value=JSON.stringify([row[5],row[6]]);}
+    $('dialog-title').textContent=row?'Edit animal record':'Add an animal';
+    $('save-animal').textContent=row?'Save changes':'Add animal';
+    $('animal-dialog').showModal();
 }
 $('animal-form').addEventListener('submit',async e=>{
     e.preventDefault();const f=e.currentTarget;const values=Object.fromEntries(new FormData(f));
@@ -208,5 +220,6 @@ $('refresh-donors').onclick=async()=>
     }catch(error){errorAt('global-error',error);
 }};
 window.addEventListener('hashchange',route);
-route();refresh().catch(error=>errorAt('global-error',error));
+route();
+refresh().catch(error=>errorAt('global-error',error));
 fetch('/check-db-connection').then(r=>r.text()).then(text=>$('connection').textContent=text.trim()==='connected'?'Database connected':'Database unavailable').catch(()=>$('connection').textContent='Connection unavailable');
