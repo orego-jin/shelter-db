@@ -11,12 +11,15 @@ async function initDB() {
         // initiate db
         db = new SQL.Database();
         
-        const schemaResponse = await fetch('../db/schema.sql');
-        const schemaSql = await schemaResponse.text();
+
+        db.run('PRAGMA foreign_keys = ON');
+    
+        // const schemaResponse = await fetch('../db/schema.sql');
+        // const schemaSql = await schemaResponse.text();
         db.exec(schemaSql);
 
-        const seedResponse = await fetch('../db/seed.sql');
-        const seedSql = await seedResponse.text();
+        // const seedResponse = await fetch('../db/seed.sql');
+        // const seedSql = await seedResponse.text();
         db.exec(seedSql);
 
         console.log("initiated db with seed data");

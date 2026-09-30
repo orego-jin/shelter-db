@@ -1,4 +1,3 @@
-
 const $ = id => document.getElementById(id);
 const state = { animals: [], shelters: [], filtered: null, editing: null, deleting: null, loaded: false };
 const pages = {
@@ -10,8 +9,16 @@ const pages = {
     donors: ['Generosity that goes further.', 'Recognize the supporters behind every kind of care.']
 };
 
-const columns = { WorkerID:'Worker ID', firstName:'First name', lastName:'Last name', phoneNumber:'Phone', volunteerHours:'Hours', availability:'Availability', startDate:'Start date' };
-const esc = value => String(value ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const columns = { 
+    WorkerID:'Worker ID', 
+    firstName:'First name', 
+    lastName:'Last name', 
+    phoneNumber:'Phone', 
+    volunteerHours:'Hours', 
+    availability:'Availability', 
+    startDate:'Start date' };
+
+const esc = value => String(value ?? '—').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 
 function notice(message) { 
@@ -33,25 +40,35 @@ function table(headers, rows, empty='No records found.') {
 }
 
 function animalTable(rows, actions=false) {
-    if (!rows.length) return '<div class="empty">No animals match your filters.<small>Try another search or add a new animal.</small></div>';
-    return `<table>
-    <thead><tr><th>Animal</th><th>Gender</th><th>Age</th><th>Color</th><th>Shelter</th>
-    ${actions?'<th>Actions</th>':''}</tr></thead>
-    <tbody>${rows.map(r=>`<tr>
-        <td><div class="animal-cell"><span class="animal-badge">♧</span>
-        <div>${esc(r[1])}<small>ANIMAL #${esc(r[0])}</small></div></div></td>
-        <td><span class="gender ${r[2]==='M'?'male':''}">${r[2]==='M'?'Male':'Female'}</span></td>
-        <td>${esc(r[3])} ${Number(r[3])===1?'year':'years'}</td>
-        <td>${esc(r[4])}</td>
-        <td>${esc(r[5])}</td>
-        ${actions?`<td><div class="row-actions"><button data-edit="${esc(r[0])}" aria-label="Edit animal ${esc(r[0])}">Edit ↗</button><button class="remove" data-delete="${esc(r[0])}" aria-label="Remove animal ${esc(r[0])}">Remove</button></div></td>`:''}</tr>`).join('')}
-    </tbody>
-    </table>`;
+    if (!rows.length) 
+        return '<div class="empty">No animals match your filters.<small>Try another search or add a new animal.</small></div>';
+    return `
+        <table>
+        <thead><tr><th>Animal</th><th>Gender</th><th>Age</th><th>Color</th><th>Shelter</th>${actions?'<th>Actions</th>':''}</tr></thead>
+        <tbody>
+        ${rows.map(r=>`<tr>
+            <td><div class="animal-cell"><span class="animal-badge">♧</span>
+                <div>${esc(r[1])}<small>ANIMAL #${esc(r[0])}</small></div>
+            </div></td>
+            <td><span class="gender ${r[2]==='M'?'male':''}">${r[2]==='M'?'Male':'Female'}</span></td>
+            <td>${esc(r[3])} ${Number(r[3])===1?'year':'years'}</td>
+            <td>${esc(r[4])}</td>
+            <td>${esc(r[5])}</td>
+            ${actions?`<td>
+                <div class="row-actions">
+                <button data-edit="${esc(r[0])}" aria-label="Edit animal ${esc(r[0])}">Edit ↗</button>
+                <button class="remove" data-delete="${esc(r[0])}" aria-label="Remove animal ${esc(r[0])}">Remove</button>
+                </div>
+                </td>`:''}
+            </tr>`).join('')}
+        </tbody>
+        </table>`;
 }
 
 function renderAnimals() {
     const q=$('animal-search').value.trim().toLowerCase(), shelter=$('shelter-filter').value, gender=$('gender-filter').value;
-    const rows=state.animals.filter(r=>(!state.filtered || state.filtered.has(String(r[0]))) && (!q || [r[0],r[1],r[4]].some(v=>String(v).toLowerCase().includes(q))) && (!shelter || JSON.stringify([r[5],r[6]])===shelter) && (!gender || r[2]===gender));
+    const rows=state.animals.filter(r=>
+        (!state.filtered || state.filtered.has(String(r[0]))) && (!q || [r[0],r[1],r[4]].some(v=>String(v).toLowerCase().includes(q))) && (!shelter || JSON.stringify([r[5],r[6]])===shelter) && (!gender || r[2]===gender));
     $('animal-table').innerHTML=animalTable(rows,true);
     $('animal-count').textContent=`Showing ${rows.length} of ${state.animals.length} animals`;
 }
@@ -83,7 +100,10 @@ async function overview() {
     $('donut').style.background=total?`conic-gradient(${stops.join(',')})`:'#e8eddf';
     $('donut-total').textContent=total;
     $('breed-legend').innerHTML=breeds.map((r,i)=>
-        `<div class="legend-row"><i style="background:${palette[i%palette.length]}"></i>${esc(r[0])}<strong>${r[1]}</strong><small>${Math.round(r[1]/total*100)}%</small></div>`).join('');
+        `<div class="legend-row">
+            <i style="background:${palette[i%palette.length]}"></i>
+            ${esc(r[0])}<strong>${r[1]}</strong><small>${Math.round(r[1]/total*100)}%</small>
+        </div>`).join('');
     $('overview-table').innerHTML=animalTable(state.animals.slice(0,5));
 }
 
@@ -141,7 +161,8 @@ async function refresh() {
     state.shelters = getShelters();
     $('nav-count').textContent = state.animals.length;
     const current=$('shelter-filter').value;
-    $('shelter-filter').innerHTML='<option value="">All shelters</option>'+ state.shelters.map(r=>`<option value="${esc(JSON.stringify(r))}">${esc(r[0])}</option>`).join('');
+    $('shelter-filter').innerHTML='<option value="">All shelters</option>' + state.shelters.map(r=>
+        `<option value="${esc(JSON.stringify(r))}">${esc(r[0])}</option>`).join('');
     $('shelter-filter').value=current;
     state.loaded=true;await route();
 }
@@ -150,7 +171,8 @@ function openAnimal(id) {
     if(!state.loaded)return;
     const row=state.animals.find(r=>String(r[0])===String(id));state.editing=row?row[0]:null;
     const f=$('animal-form');f.reset();$('form-error').hidden=true;
-    f.elements.shelter.innerHTML='<option value="">Choose a shelter</option>'+state.shelters.map(r=>`<option value="${esc(JSON.stringify(r))}">${esc(r[0])} · ${esc(r[1])}</option>`).join('');
+    f.elements.shelter.innerHTML='<option value="">Choose a shelter</option>' + state.shelters.map(r=>
+        `<option value="${esc(JSON.stringify(r))}">${esc(r[0])} · ${esc(r[1])}</option>`).join('');
     f.elements.animalID.readOnly=!!row;
     if(row){['animalID','breed','gender','age','color'].forEach((key,i)=>f.elements[key].value=row[i]);
         f.elements.shelter.value=JSON.stringify([row[5],row[6]]);}
@@ -200,7 +222,9 @@ $('animal-table').addEventListener('click',e=>{
     if(remove){
         state.deleting=remove.dataset.delete;
         const r=state.animals.find(r=>String(r[0])===state.deleting);
-        $('delete-description').textContent=`You are removing ${r[1]} · Animal #${r[0]}.`;$('delete-error').hidden=true;$('delete-dialog').showModal();
+        $('delete-description').textContent=`You are removing ${r[1]} · Animal #${r[0]}.`;
+        $('delete-error').hidden=true;
+        $('delete-dialog').showModal();
     }
 });
 
@@ -301,7 +325,7 @@ async function start() {
         await initDB();
         controls.forEach((control, index) => control.disabled = disabledBefore[index]);
         await refresh();
-        $('connection').textContent = 'SQLite in this browser';
+        $('connection').textContent = 'Serverless';
     } catch (error) {
         controls.forEach(control => control.disabled = true);
         errorAt('global-error', error);
