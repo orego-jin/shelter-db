@@ -57,17 +57,29 @@ function renderAnimals() {
 }
 
 async function overview() {
-    const result = db.exec('SELECT * FROM Animal');
-    const animals = result[0]?.values ?? [];
+    const breeds = getAnimalsByBreed();
+    const volunteerRows = getVolunteers(['WorkerID']);
+    const donorRows = getDonorsAllCategories();
 
-    const breeds=results[0].data;
     if (!Array.isArray(breeds)) throw new Error('Could not load animal statistics.');
-    const metrics=[['Animal records',state.animals.length,'Across your shelter network'],['Shelter locations',state.shelters.length,'Places that make a difference'],['Volunteers',results[1].data.length,'People behind the care'],['All-category donors',results[2].data.length,'Supporting every supply category']];
-    $('stats').innerHTML=metrics.map(([label,note,sub])=>`<div class="stat"><div class="stat-label">${label}</div><strong>${note}</strong><small>${sub}</small></div>`).join('');
-    const palette=['#627a43','#90a76c','#bdcba7','#d8dfc9','#eaeede'];let start=0;const total=breeds.reduce((n,r)=>n+r[1],0);
-    const stops=breeds.map((r,i)=>{const end=start+(total?r[1]/total*100:0);
+    const metrics=[
+        ['Animal records',state.animals.length,'Across your shelter network'],
+        ['Shelter locations',state.shelters.length,'Places that make a difference'],
+        ['Volunteers',volunteerRows.length,'People behind the care'],
+        ['All-category donors',donorRows.length,'Supporting every supply category']
+    ];
+
+    $('stats').innerHTML=metrics.map(([label,note,sub])=>
+        `<div class="stat"><div class="stat-label">${label}</div><strong>${note}</strong><small>${sub}</small></div>`).join('');
+
+    const palette=['#627a43','#90a76c','#bdcba7','#d8dfc9','#eaeede'];
+    let start=0;const total=breeds.reduce((n,r)=>n+r[1],0);
+    const stops=breeds.map((r,i)=>{
+        const end=start+(total?r[1]/total*100:0);
         const stop=`${palette[i%palette.length]} ${start}% ${end}%`;
-        start=end;return stop;});
+        start=end;return stop;
+    });
+    
     $('donut').style.background=total?`conic-gradient(${stops.join(',')})`:'#e8eddf';
     $('donut-total').textContent=total;
     $('breed-legend').innerHTML=breeds.map((r,i)=>
@@ -95,7 +107,7 @@ async function volunteers() {
         return;
     }
     const result = getVolunteers(attrs);
-    $('volunteer-results').innerHTML=table(attrs.map(a=>columns[a]),result.data);
+    $('volunteer-results').innerHTML=table(attrs.map(a=>columns[a]),result);
 }
 
 async function donors() {
@@ -127,9 +139,9 @@ async function route() {
 async function refresh() {
     state.animals = getAnimals();
     state.shelters = getShelters();
-    $('nav-count').textContent=a.data.length;
+    $('nav-count').textContent = state.animals.length;
     const current=$('shelter-filter').value;
-    $('shelter-filter').innerHTML='<option value="">All shelters</option>'+s.data.map(r=>`<option value="${esc(JSON.stringify(r))}">${esc(r[0])}</option>`).join('');
+    $('shelter-filter').innerHTML='<option value="">All shelters</option>'+ state.shelters.map(r=>`<option value="${esc(JSON.stringify(r))}">${esc(r[0])}</option>`).join('');
     $('shelter-filter').value=current;
     state.loaded=true;await route();
 }
@@ -242,7 +254,7 @@ $('advanced-form').onsubmit=async e=>{
         row.children[0].value:'',attribute:row.children[1].value,userInput:row.children[2].value}));
     try{
         const rows = selectAnimals(attributes);
-        state.filtered=new Set(r.data.map(row=>String(row[0])));
+        state.filtered=new Set(rows.map(row=>String(row[0])));
         renderAnimals();
     }catch(error){errorAt('global-error',error);
 }};

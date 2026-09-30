@@ -27,36 +27,6 @@ async function initDB() {
     }
 }
 
-initDB();
-
-//
-// async function initDB() {
-//     if (db) return db;
-//     if (location.protocol === 'file:') {
-//         throw new Error('Open this demo through a static HTTP server, not by double-clicking index.html. See README.md.');
-//     }
-//     if (typeof initSqlJs !== 'function') {
-//         throw new Error('SQLite could not load. Check vendor/sql-wasm.js.');
-//     }
-//     const SQL = await initSqlJs({ locateFile: file => `./vendor/${file}` });
-//     db = new SQL.Database();
-//     try {
-//         db.run('PRAGMA foreign_keys = ON');
-//         db.run('BEGIN');
-//         for (const file of ['schema.sql', 'seed.sql']) {
-//             const response = await fetch(`./db/${file}`);
-//             if (!response.ok) throw new Error(`Could not load db/${file} (HTTP ${response.status}).`);
-//             db.run(await response.text());
-//         }
-//         db.run('COMMIT');
-//         return db;
-//     } catch (error) {
-//         db.close();
-//         db = undefined;
-//         throw error;
-//     }
-// }
-
 // db.exec() returns [{ columns: [...], values: [[...], ...] }].
 // A SELECT with no rows returns [], so use an empty array as the fallback.
 function query(sql, params = []) {
