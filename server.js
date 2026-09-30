@@ -5,7 +5,7 @@ const database = require('./db');
 const appController = require('./appController');
 const app = express();
 const PORT = process.env.PORT || 65534;
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public_sqlite_version')));
 app.use(express.json());
 app.use('/', appController);
 async function start() {

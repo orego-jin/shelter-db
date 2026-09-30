@@ -1,36 +1,3 @@
-'use strict';
-
-let db;
-
-async function initDB() {
-    try {
-        const SQL = await initSqlJs({
-            locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
-        });
-
-        // initiate db
-        db = new SQL.Database();
-        
-        const schemaResponse = await fetch('../db/schema.sql');
-        const schemaSql = await schemaResponse.text();
-        db.exec(schemaSql);
-
-        const seedResponse = await fetch('../db/seed.sql');
-        const seedSql = await seedResponse.text();
-        db.exec(seedSql);
-
-        console.log("initiated db with seed data");
-        
-        document.getElementById('result').innerText = "DB loaded successfully.";
-        document.getElementById('loadBtn').disabled = false;
-
-    } catch (error) {
-        console.error("Failed to load DB.", error);
-    }
-}
-
-initDB();
-
 
 const $ = id => document.getElementById(id);
 const state = { animals: [], shelters: [], filtered: null, editing: null, deleting: null, loaded: false };
@@ -45,12 +12,7 @@ const pages = {
 
 const columns = { WorkerID:'Worker ID', firstName:'First name', lastName:'Last name', phoneNumber:'Phone', volunteerHours:'Hours', availability:'Availability', startDate:'Start date' };
 const esc = value => String(value ?? '—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function api(url, body) {
-    const response = await fetch(url, body === undefined ? {} : {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-    const result = await response.json();
-    if (!response.ok || result.success === false) throw new Error(result.message || 'Could not complete the request. Please try again.');
-    return result;
-}
+
 
 function notice(message) { 
     $('toast').textContent=message; $('toast').hidden=false; 
@@ -95,7 +57,9 @@ function renderAnimals() {
 }
 
 async function overview() {
-    const results=await Promise.all([api('/get-all-types-animals'),api('/projection',{attributes:['WorkerID']}),api('/donors-all-categories')]);
+    const result = db.exec('SELECT * FROM Animal');
+    const animals = result[0]?.values ?? [];
+
     const breeds=results[0].data;
     if (!Array.isArray(breeds)) throw new Error('Could not load animal statistics.');
     const metrics=[['Animal records',state.animals.length,'Across your shelter network'],['Shelter locations',state.shelters.length,'Places that make a difference'],['Volunteers',results[1].data.length,'People behind the care'],['All-category donors',results[2].data.length,'Supporting every supply category']];
@@ -118,10 +82,11 @@ async function shelters() {
         <h3>${esc(s[0])}</h3><p>${esc(s[1])}</p><strong>${state.animals.filter(r=>r[5]===s[0]&&r[6]===s[1]).length}</strong> 
         <span class="muted">animal records</span>
         <a href="#animals" data-shelter="${i}">Explore animals →</a></article>`).join('');
-    const [staff,average]=await Promise.all([api('/get-shelters-with-more-than-5-staff'),api('/get-shelters-with-more-than-average-animals')]);
-    if (!Array.isArray(staff.data)||!Array.isArray(average.data)) throw new Error('Could not load shelter reports.');
-    $('staff-table').innerHTML=table(['Address','Postal code','Staff'],staff.data);
-    $('average-table').innerHTML=table(['Address','Postal code','Animals'],average.data);
+    const staff = getStaffCoverage();
+    const average = getAboveAverageShelters();    
+    if (!Array.isArray(staff)||!Array.isArray(average)) throw new Error('Could not load shelter reports.');
+    $('staff-table').innerHTML=table(['Address','Postal code','Staff'],staff);
+    $('average-table').innerHTML=table(['Address','Postal code','Animals'],average);
 }
 
 async function volunteers() {
@@ -129,12 +94,13 @@ async function volunteers() {
     if(!attrs.length){$('volunteer-results').innerHTML='<div class="empty">Choose at least one column to view volunteers.</div>';
         return;
     }
-    const result=await api('/projection',{attributes:attrs});
+    const result = getVolunteers(attrs);
     $('volunteer-results').innerHTML=table(attrs.map(a=>columns[a]),result.data);
 }
 
-async function donors() {const result=await api('/donors-all-categories');
-    $('donor-results').innerHTML=table(['Email address','Donor name'],result.data,'No donors have contributed to every category yet.');
+async function donors() {
+    const result = getDonorsAllCategories();    
+    $('donor-results').innerHTML=table(['Email address','Donor name'],result,'No donors have contributed to every category yet.');
 }
 
 async function route() {
@@ -159,7 +125,8 @@ async function route() {
 }
 
 async function refresh() {
-    const [a,s]=await Promise.all([api('/animals'),api('/shelters')]);state.animals=a.data;state.shelters=s.data;
+    state.animals = getAnimals();
+    state.shelters = getShelters();
     $('nav-count').textContent=a.data.length;
     const current=$('shelter-filter').value;
     $('shelter-filter').innerHTML='<option value="">All shelters</option>'+s.data.map(r=>`<option value="${esc(JSON.stringify(r))}">${esc(r[0])}</option>`).join('');
@@ -181,35 +148,50 @@ function openAnimal(id) {
 }
 
 $('animal-form').addEventListener('submit',async e=>{
-    e.preventDefault();const f=e.currentTarget;const values=Object.fromEntries(new FormData(f));
+    e.preventDefault();
+    const f=e.currentTarget;
+    const values=Object.fromEntries(new FormData(f));
     const shelter=JSON.parse(values.shelter);
     delete values.shelter;
     values.shelterAddress=shelter[0];
     values.shelterPostalCode=shelter[1];
     $('save-animal').disabled=true;
     $('form-error').hidden=true;
-    try{await api(state.editing===null?'/insert-animal':'/update-animal',values);
+    try{
+        if (state.editing === null) insertAnimal(values);
+        else updateAnimal(values);
         $('animal-dialog').close();
         state.filtered=null;
-        await refresh();notice('Animal record saved.');
-    }catch(error){errorAt('form-error',error);}finally{$('save-animal').disabled=false;}
+        await refresh();
+        notice('Animal record saved.');
+    }catch(error){
+        errorAt('form-error',error);
+    }finally{
+        $('save-animal').disabled=false;
+    }
 });
 
 $('delete-form').addEventListener('submit',async e=>{e.preventDefault();
-    $('confirm-delete').disabled=true;try{await api('/delete-animal',{animalID:state.deleting});
-    $('delete-dialog').close();state.filtered=null;
-    await refresh();notice('Animal record removed.');
+    $('confirm-delete').disabled=true;
+    try{deleteAnimal(state.deleting);
+    $('delete-dialog').close();
+    state.filtered=null;
+    await refresh();
+    notice('Animal record removed.');
 }catch(error){errorAt('delete-error',error);}
-finally{$('confirm-delete').disabled=false;}});
+finally{$('confirm-delete').disabled=false;}
+});
 
-$('animal-table').addEventListener('click',e=>
-    {const edit=e.target.closest('[data-edit]'),remove=e.target.closest('[data-delete]');
+$('animal-table').addEventListener('click',e=>{
+    const edit=e.target.closest('[data-edit]'),remove=e.target.closest('[data-delete]');
     if(edit)openAnimal(edit.dataset.edit);
     if(remove){
         state.deleting=remove.dataset.delete;
         const r=state.animals.find(r=>String(r[0])===state.deleting);
         $('delete-description').textContent=`You are removing ${r[1]} · Animal #${r[0]}.`;$('delete-error').hidden=true;$('delete-dialog').showModal();
-    }});
+    }
+});
+
 document.querySelectorAll('.close-dialog').forEach(b=>b.onclick=()=>$('animal-dialog').close());
 ['cancel-delete','cancel-delete-x'].forEach(id=>$(id).onclick=()=>$('delete-dialog').close());
 $('add-animal').onclick=()=>openAnimal();
@@ -244,6 +226,7 @@ $('advanced-toggle').onclick=()=>{
     $('advanced-form').hidden=hidden;
     $('advanced-toggle').setAttribute('aria-expanded',String(!hidden));
 };
+
 $('add-condition').onclick=condition;condition();
 $('clear-filters').onclick=()=>{
     state.filtered=null;
@@ -255,10 +238,12 @@ $('clear-filters').onclick=()=>{
 
 $('advanced-form').onsubmit=async e=>{
     e.preventDefault();
-    const attributes=[...$('conditions').children].map((row,i)=>({logic:i?row.children[0].value:'',attribute:row.children[1].value,userInput:row.children[2].value}));
-    try{const r=await api('/selection',{attributes});
-    state.filtered=new Set(r.data.map(row=>String(row[0])));
-    renderAnimals();
+    const attributes=[...$('conditions').children].map((row,i)=>({logic:i?
+        row.children[0].value:'',attribute:row.children[1].value,userInput:row.children[2].value}));
+    try{
+        const rows = selectAnimals(attributes);
+        state.filtered=new Set(r.data.map(row=>String(row[0])));
+        renderAnimals();
     }catch(error){errorAt('global-error',error);
 }};
 
@@ -267,8 +252,12 @@ $('adoption-form').onsubmit=async e=>{
     const button=e.currentTarget.querySelector('button');
     button.disabled=true;
     try{
-        const r=await api('/join',{adopterName:$('adopter-name').value.trim()});
-    $('adoption-results').innerHTML=table(['Adopter','Animal ID','Age','Gender','Breed'],r.data||[],r.status==='no_record'?'This adopter has no adoption records.':'No matching adopter found.');
+        const r=findAdoptions($('adopter-name').value.trim());
+        $('adoption-results').innerHTML=table(
+            ['Adopter','Animal ID','Age','Gender','Breed'],
+            r.data||[],
+            r.status==='no_record'?'This adopter has no adoption records.':'No matching adopter found.'
+        );
     }catch(error){
         errorAt('global-error',error);
     }finally{
@@ -292,5 +281,20 @@ $('refresh-donors').onclick=async()=>
 
 window.addEventListener('hashchange',route);
 route();
-refresh().catch(error=>errorAt('global-error',error));
-fetch('/check-db-connection').then(r=>r.text()).then(text=>$('connection').textContent=text.trim()==='connected'?'Database connected':'Database unavailable').catch(()=>$('connection').textContent='Connection unavailable');
+async function start() {
+    const controls = [...document.querySelectorAll('button, input, select')];
+    const disabledBefore = controls.map(control => control.disabled);
+    controls.forEach(control => control.disabled = true);
+    try {
+        await initDB();
+        controls.forEach((control, index) => control.disabled = disabledBefore[index]);
+        await refresh();
+        $('connection').textContent = 'SQLite in this browser';
+    } catch (error) {
+        controls.forEach(control => control.disabled = true);
+        errorAt('global-error', error);
+        $('connection').textContent = 'Database unavailable';
+        $('stats').textContent = 'Could not load demo data. See the error above.';
+    }
+}
+start();
