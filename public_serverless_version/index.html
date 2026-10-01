@@ -18,6 +18,10 @@
     
         <p class="nav-label">WORKSPACE</p>
         <nav aria-label="Main navigation">
+            <button type="button" id="export-db" disabled>Export database</button>
+            <button type="button" id="import-db" disabled>Import database</button>
+            <input type="file" id="import-db-file" accept=".sqlite,.sqlite3,.db" hidden>
+            
             <a href="#overview" data-page="overview">Overview</a>
             <a href="#animals" data-page="animals">Animals <b id="nav-count">—</b></a>
             <a href="#shelters" data-page="shelters">Shelters</a>
@@ -27,9 +31,11 @@
         </nav>
 
         <div class="sidebar-bottom">
+                        
             <div class="demo-note">
                 Demo workspace
             </div>
+
             <div class="profile"><span class="avatar">Ad</span>
                 <div><strong>demo administrator</strong><small>Shelter management</small></div>
             </div>

@@ -1,34 +1,96 @@
 'use strict';
 
 let db;
+let SQL;
 //
 async function initDB() {
     try {
-        const SQL = await initSqlJs({
+        SQL = await initSqlJs({
             locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
         });
 
         // initiate db
         db = new SQL.Database();
-        
 
         db.run('PRAGMA foreign_keys = ON');
-    
-        // const schemaResponse = await fetch('../db/schema.sql');
-        // const schemaSql = await schemaResponse.text();
+        
         db.exec(schemaSql);
-
-        // const seedResponse = await fetch('../db/seed.sql');
-        // const seedSql = await seedResponse.text();
         db.exec(seedSql);
-
         console.log("initiated db with seed data");
-        ``
 
     } catch (error) {
         console.error("Failed to load DB.", error);
+        throw error;
     }
 }
+
+async function importDB(file) {
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    let imported;
+
+    try {
+        imported = new SQL.Database(bytes);
+
+        const integrity = imported.exec('PRAGMA integrity_check');
+        if (integrity[0]?.values[0]?.[0] !== 'ok') {
+            throw new Error('The database file is damaged.');
+        }
+
+        const tables = db.exec(`
+            SELECT name
+            FROM sqlite_master
+            WHERE type = 'table'
+              AND name NOT LIKE 'sqlite_%'
+        `)[0]?.values ?? [];
+
+        for (const [tableName] of tables) {
+            const quotedName = `"${tableName.replace(/"/g, '""')}"`;
+
+            const requiredColumns =
+                db.exec(`PRAGMA table_info(${quotedName})`)[0]?.values ?? [];
+
+            const importedColumns =
+                imported.exec(`PRAGMA table_info(${quotedName})`)[0]?.values ?? [];
+
+            const names = new Set(importedColumns.map(column => column[1]));
+
+            if (requiredColumns.some(column => !names.has(column[1]))) {
+                throw new Error(`Missing table or columns: ${tableName}`);
+            }
+        }
+
+        imported.run('PRAGMA foreign_keys = ON');
+
+        if (imported.exec('PRAGMA foreign_key_check').length > 0) {
+            throw new Error('The database contains invalid relationships.');
+        }
+    } catch (error) {
+        imported?.close();
+        throw new Error(`Could not import database: ${error.message}`);
+    }
+
+    const previous = db;
+    db = imported;
+    previous.close();
+}
+
+
+
+function downloadDB() {
+    const data = db.export();
+    const blob = new Blob([data], {
+        type: 'application/vnd.sqlite3'
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'shelter-backup.sqlite';
+    link.click();
+
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 
 // db.exec() returns [{ columns: [...], values: [[...], ...] }].
 // A SELECT with no rows returns [], so use an empty array as the fallback.

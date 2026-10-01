@@ -315,6 +315,67 @@ $('refresh-donors').onclick=async()=>
     }catch(error){errorAt('global-error',error);
 }};
 
+$('export-db').addEventListener('click', () => {
+    try {
+        downloadDB();
+    } catch (error) {
+        errorAt('global-error', error);
+    }
+});
+
+$('import-db').addEventListener('click', () => {
+    $('import-db-file').click();
+});
+
+$('import-db-file').addEventListener('change', async event => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const confirmed = window.confirm(
+        'Replace the current database? Export your changes first if needed.'
+    );
+
+    if (!confirmed) {
+        event.target.value = '';
+        return;
+    }
+
+    const controls = [...document.querySelectorAll('button, input, select')];
+    const previousDisabled = controls.map(control => control.disabled);
+    controls.forEach(control => control.disabled = true);
+
+    try {
+        await importDB(file);
+
+        state.filtered = null;
+        state.editing = null;
+        state.deleting = null;
+
+        $('animal-search').value = '';
+        $('shelter-filter').value = '';
+        $('gender-filter').value = '';
+        $('conditions').replaceChildren();
+        condition();
+
+        $('adopter-name').value = '';
+        $('adoption-results').textContent =
+            'Enter an adopter’s name to find their records.';
+
+        await refresh();
+        notice('Database imported.');
+    } catch (error) {
+        errorAt('global-error', error);
+    } finally {
+        controls.forEach((control, index) => {
+            control.disabled = previousDisabled[index];
+        });
+
+        event.target.value = '';
+    }
+});
+
+
+
 window.addEventListener('hashchange',route);
 route();
 async function start() {
@@ -325,6 +386,8 @@ async function start() {
         await initDB();
         controls.forEach((control, index) => control.disabled = disabledBefore[index]);
         await refresh();
+        $('export-db').disabled = false;
+        $('import-db').disabled = false;
         $('connection').textContent = 'Serverless';
     } catch (error) {
         controls.forEach(control => control.disabled = true);
